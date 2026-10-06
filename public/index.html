@@ -1,0 +1,813 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>
+:root { color-scheme: light; padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+*, *::before, *::after { box-sizing: border-box; }
+body { margin: 0; -webkit-font-smoothing: antialiased; }
+img { max-width: 100%; }
+[hidden] { display: none !important; }
+</style>
+<title>Arnold Tongue Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,400..700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: instrument bench — control rail on the left, a grid of scope panels on the right; stacks on phones */
+:root {
+  --bg: #E7EDEB;
+  --panel: #F7FAF9;
+  --ink: #132321;
+  --muted: #556663;
+  --rule: #CAD5D2;
+  --grid: #DDE5E2;
+  --ent: #0B746C;
+  --sup: #A4521A;
+  --accent: var(--ent);
+  --f-sans: "Archivo", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --r: 6px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0D1413; --panel: #141E1D; --ink: #DFEAE7; --muted: #8C9E9A;
+    --rule: #283735; --grid: #1D2927; --ent: #3BBFB1; --sup: #E2964E;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0D1413; --panel: #141E1D; --ink: #DFEAE7; --muted: #8C9E9A;
+  --rule: #283735; --grid: #1D2927; --ent: #3BBFB1; --sup: #E2964E;
+  color-scheme: dark;
+}
+:root[data-model="sup"] { --accent: var(--sup); }
+
+body { background: var(--bg); color: var(--ink); font-family: var(--f-sans); font-size: 15px; line-height: 1.5; }
+.wrap { max-width: 1320px; margin: 0 auto; padding-inline: clamp(16px, 3vw, 32px); padding-block: 28px 56px; display: flex; flex-direction: column; gap: 22px; }
+
+.top { display: flex; flex-direction: column; gap: 6px; }
+.eyebrow { margin: 0; font-family: var(--f-mono); font-size: 11.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+h1 { margin: 0; font-size: clamp(30px, 4.4vw, 46px); font-weight: 700; font-stretch: 122%; letter-spacing: -0.015em; line-height: 1.05; text-wrap: balance; }
+h1 span { color: var(--accent); }
+.lede { margin: 4px 0 0; max-width: 72ch; color: var(--muted); }
+
+.bench { display: grid; grid-template-columns: 290px minmax(0, 1fr); gap: 20px; align-items: start; }
+.rail { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 12px); background: var(--panel); border: 1px solid var(--rule); border-radius: var(--r); padding: 16px; display: flex; flex-direction: column; gap: 18px; }
+.group { display: flex; flex-direction: column; gap: 10px; }
+.gh { margin: 0; font-family: var(--f-mono); font-size: 11px; font-weight: 500; letter-spacing: .09em; text-transform: uppercase; color: var(--muted); }
+.seg { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid var(--rule); border-radius: var(--r); overflow: hidden; }
+.seg button { font: 600 13.5px var(--f-sans); padding: 8px 6px; border: 0; background: transparent; color: var(--ink); cursor: pointer; }
+.seg button + button { border-left: 1px solid var(--rule); }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--panel); }
+.presets { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font: 500 12.5px var(--f-sans); padding: 4px 10px; border-radius: 999px; border: 1px solid var(--rule); background: transparent; color: var(--ink); cursor: pointer; }
+.chip:hover { border-color: var(--accent); }
+.btn { font: 600 13px var(--f-sans); padding: 8px 12px; border-radius: var(--r); border: 1px solid var(--accent); background: transparent; color: var(--accent); cursor: pointer; }
+button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.ctl { display: flex; flex-direction: column; gap: 2px; }
+.ctl .row { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.ctl label { font-size: 13.5px; font-weight: 500; }
+.ctl output { font-family: var(--f-mono); font-size: 12px; font-variant-numeric: tabular-nums; color: var(--accent); white-space: nowrap; }
+.ctl input[type="range"] { width: 100%; margin: 4px 0 0; accent-color: var(--accent); }
+.hint { margin: 0; font-size: 12px; line-height: 1.4; color: var(--muted); }
+
+.scopes { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 16px; min-width: 0; }
+.readouts { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 1px; background: var(--rule); border: 1px solid var(--rule); border-radius: var(--r); overflow: hidden; }
+.readouts > div { background: var(--panel); padding: 10px 12px; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.readouts .k { font-family: var(--f-mono); font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.readouts .v { font-family: var(--f-mono); font-size: 21px; font-weight: 500; font-variant-numeric: tabular-nums; line-height: 1.2; }
+.readouts .s { font-family: var(--f-mono); font-size: 10.5px; color: var(--muted); }
+
+.panel { background: var(--panel); border: 1px solid var(--rule); border-radius: var(--r); padding: 14px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.panel h2 { margin: 0; font-size: 14px; font-weight: 600; font-stretch: 108%; }
+.cap { margin: 0; font-size: 12.5px; line-height: 1.45; color: var(--muted); max-width: 72ch; }
+.p-phase { grid-column: span 4; }
+.p-polar { grid-column: span 2; }
+.p-spec { grid-column: span 3; }
+.p-map { grid-column: span 3; }
+canvas { display: block; width: 100%; }
+.c-phase { aspect-ratio: 5 / 2; }
+.c-polar { aspect-ratio: 1; max-width: 360px; margin: 0 auto; }
+.c-spec { aspect-ratio: 4 / 3; }
+.c-map { aspect-ratio: 4 / 3; cursor: pointer; }
+.mapbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
+.seg.small button { font-size: 12px; padding: 4px 10px; }
+.legend { display: flex; align-items: center; gap: 8px; font-family: var(--f-mono); font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.legend .bar { width: 90px; height: 8px; border-radius: 2px; border: 1px solid var(--rule); background: linear-gradient(90deg, var(--panel), var(--accent)); }
+.status { font-family: var(--f-mono); font-size: 11px; color: var(--muted); }
+
+.notes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.notes .panel { gap: 10px; }
+.notes ol { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 8px; font-size: 14px; }
+.notes p { margin: 0; font-size: 14px; }
+pre.eq { margin: 0; padding: 12px; background: var(--bg); border-radius: 4px; overflow-x: auto; font-family: var(--f-mono); font-size: 12.5px; line-height: 1.6; color: var(--ink); }
+pre.eq b { font-weight: 500; color: var(--accent); }
+
+@media (max-width: 1180px) {
+  .p-phase, .p-map { grid-column: span 6; }
+  .p-polar, .p-spec { grid-column: span 3; }
+  .notes { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 960px) {
+  .bench { grid-template-columns: minmax(0, 1fr); }
+  .rail { position: static; }
+}
+@media (max-width: 640px) {
+  .p-phase, .p-polar, .p-spec, .p-map { grid-column: span 6; }
+  .c-phase { aspect-ratio: 3 / 2; }
+  .readouts { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .readouts .v { font-size: 18px; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <p class="eyebrow">Companion to Notbohm, Kurths &amp; Herrmann (2016) · Front. Hum. Neurosci. 10:10</p>
+    <h1>Arnold Tongue <span>Lab</span></h1>
+    <p class="lede">Flicker a light at a 10 Hz alpha rhythm and compare two explanations of the SSVEP. <strong>Entrainment</strong>: the flicker pulls a noisy alpha oscillator into step. <strong>Superposition</strong>: a fixed evoked response simply adds to alpha that keeps running on its own. Both are scored the way the paper does it, from the EEG-minus-flicker phase difference and its normalized Shannon entropy ρ.</p>
+  </header>
+
+  <main class="bench">
+    <aside class="rail" aria-label="Simulation controls">
+      <div class="group">
+        <h2 class="gh">Model</h2>
+        <div class="seg" role="group" aria-label="Model">
+          <button type="button" id="m-ent" data-m="ent" aria-pressed="true">Entrainment</button>
+          <button type="button" id="m-sup" data-m="sup" aria-pressed="false">Superposition</button>
+        </div>
+        <p class="hint" id="model-hint">Noisy Adler phase oscillator, pulled by the flicker.</p>
+      </div>
+
+      <div class="group">
+        <h2 class="gh">Presets</h2>
+        <div class="presets">
+          <button type="button" class="chip" data-preset="inside">Inside tongue</button>
+          <button type="button" class="chip" data-preset="border">Tongue border</button>
+          <button type="button" class="chip" data-preset="outside">Far outside</button>
+          <button type="button" class="chip" data-preset="mimic">Superposition mimic</button>
+        </div>
+      </div>
+
+      <div class="group">
+        <h2 class="gh">Flicker</h2>
+        <div class="ctl">
+          <div class="row"><label for="level">Intensity level</label><output id="o-level" for="level">4.00</output></div>
+          <input type="range" id="level" min="1" max="5" step="0.25" value="4">
+          <p class="hint">The paper used five levels, 1 to 5.</p>
+        </div>
+        <div class="ctl">
+          <div class="row"><label for="df">Frequency − IAF</label><output id="o-df" for="df">+2.0 Hz</output></div>
+          <input type="range" id="df" min="-3" max="3" step="0.1" value="2">
+          <p class="hint">IAF is fixed at 10 Hz here.</p>
+        </div>
+      </div>
+
+      <div class="group" id="grp-ent">
+        <h2 class="gh">Entrainment model</h2>
+        <div class="ctl">
+          <div class="row"><label for="kappa">Coupling per level</label><output id="o-kappa" for="kappa">0.50 Hz</output></div>
+          <input type="range" id="kappa" min="0.1" max="1" step="0.05" value="0.5">
+          <p class="hint">Tongue half-width at level L is L × this value.</p>
+        </div>
+      </div>
+
+      <div class="group" id="grp-sup" hidden>
+        <h2 class="gh">Superposition model</h2>
+        <div class="ctl">
+          <div class="row"><label for="gain">Evoked amplitude per level</label><output id="o-gain" for="gain">0.28</output></div>
+          <input type="range" id="gain" min="0.05" max="0.6" step="0.01" value="0.28">
+          <p class="hint">Relative to the mean alpha amplitude of 1.</p>
+        </div>
+        <div class="ctl">
+          <div class="row"><label for="resW">Resonance width</label><output id="o-resW" for="resW">1.5 Hz</output></div>
+          <input type="range" id="resW" min="0.5" max="5" step="0.1" value="1.5">
+          <p class="hint">How sharply the evoked response peaks near IAF.</p>
+        </div>
+      </div>
+
+      <div class="group">
+        <h2 class="gh">Ongoing alpha</h2>
+        <div class="ctl">
+          <div class="row"><label for="D">Phase noise</label><output id="o-D" for="D">3.0 rad²/s</output></div>
+          <input type="range" id="D" min="0" max="15" step="0.5" value="3">
+          <p class="hint">Alpha peak half-width ≈ D / 2π Hz.</p>
+        </div>
+        <div class="ctl">
+          <div class="row"><label for="sigA">Amplitude waxing and waning</label><output id="o-sigA" for="sigA">0.50</output></div>
+          <input type="range" id="sigA" min="0" max="1" step="0.05" value="0.5">
+          <p class="hint">Log-amplitude SD, 0.5 s timescale.</p>
+        </div>
+        <div class="ctl">
+          <div class="row"><label for="sens">Sensor noise</label><output id="o-sens" for="sens">0.15</output></div>
+          <input type="range" id="sens" min="0" max="0.5" step="0.05" value="0.15">
+        </div>
+      </div>
+
+      <button type="button" class="btn" id="reseed">Draw a new noise sample</button>
+    </aside>
+
+    <section class="scopes" aria-label="Simulation output">
+      <div class="readouts">
+        <div><span class="k">ρ entropy</span><span class="v" id="ro-rho">—</span><span class="s">paper's measure</span></div>
+        <div><span class="k">PLV</span><span class="v" id="ro-R">—</span><span class="s">mean vector length</span></div>
+        <div><span class="k">Time locked</span><span class="v" id="ro-lock">—</span><span class="s">in plateaus</span></div>
+        <div><span class="k">Longest plateau</span><span class="v" id="ro-long">—</span><span class="s">of 26 s analysed</span></div>
+        <div><span class="k">Slips</span><span class="v" id="ro-slip">—</span><span class="s">per minute</span></div>
+        <div><span class="k">Phase drift</span><span class="v" id="ro-drift">—</span><span class="s" id="ro-theory">—</span></div>
+      </div>
+
+      <article class="panel p-phase">
+        <h2>Δ phase over one 30 s run</h2>
+        <canvas class="c-phase" id="cv-phase" role="img" aria-label="Unwrapped phase difference between EEG and flicker over time"></canvas>
+        <p class="cap">EEG phase minus flicker phase, unwrapped, as in the paper's Fig. 1A. Flat stretches (shaded) are plateaus where the two are locked; each one-cycle step is a phase slip. The grey margins are the first and last 2 s, which the analysis drops.</p>
+      </article>
+
+      <article class="panel p-polar">
+        <h2>Δ phase distribution</h2>
+        <canvas class="c-polar" id="cv-polar" role="img" aria-label="Polar histogram of the wrapped phase difference"></canvas>
+        <p class="cap">80-bin histogram of the wrapped phase difference (Fig. 1C). The line is the mean vector; its length is the PLV.</p>
+      </article>
+
+      <article class="panel p-spec">
+        <h2>EEG spectrum during flicker</h2>
+        <canvas class="c-spec" id="cv-spec" role="img" aria-label="Power spectrum of the simulated EEG"></canvas>
+        <p class="cap">Welch spectrum, 4 s Hann windows. Check whether a separate 10 Hz alpha peak survives next to the flicker peak. That separates the two models; the phase measures above do not.</p>
+      </article>
+
+      <article class="panel p-map">
+        <div class="mapbar">
+          <h2>ρ across intensity × frequency</h2>
+          <div class="seg small" role="group" aria-label="Map resolution">
+            <button type="button" data-grid="coarse" aria-pressed="true">5 × 7 (paper)</button>
+            <button type="button" data-grid="fine" aria-pressed="false">Fine</button>
+          </div>
+        </div>
+        <canvas class="c-map" id="cv-map" role="img" aria-label="Map of entropy index over intensity and frequency"></canvas>
+        <div class="mapbar">
+          <div class="legend"><span>ρ 0</span><span class="bar"></span><span id="legend-max">0.05</span></div>
+          <span class="status" id="map-status">Computing…</span>
+        </div>
+        <p class="cap" id="map-cap">Mean ρ across 4 simulated subjects per cell. Dashed line: the Adler tongue edge, |Δf| = κ · L. Click a cell to load it.</p>
+      </article>
+    </section>
+  </main>
+
+  <section class="notes" aria-label="Notes">
+    <article class="panel">
+      <h2>Things to try</h2>
+      <ol>
+        <li>Start at the tongue border, the default. The Adler oscillator holds a plateau, slips one cycle, then locks again. That is the paper's intermittency.</li>
+        <li>Switch to Superposition and change nothing else. Plateaus and slips are still there, because alpha waxes and wanes against a fixed evoked response. The map also forms a wedge.</li>
+        <li>Set amplitude waxing and waning to 0. In Superposition, slips become regular or disappear. In Entrainment they come from the dynamics and stay.</li>
+        <li>Compare the spectra. Entrainment gives one peak, pulled to the flicker frequency. Superposition gives two: the flicker at f and alpha still at 10 Hz.</li>
+        <li>Raise the phase noise under Entrainment. The tongue edges blur and slips appear even inside it.</li>
+      </ol>
+    </article>
+    <article class="panel">
+      <h2>The two models</h2>
+<pre class="eq"><b>Entrainment</b> (noisy Adler oscillator)
+dφ/dt = ω₀ + K·sin(ωt − φ) + √(2D)·ξ(t)
+K = 2π · κ · L
+locks when |f − IAF| ≤ κ · L
+EEG = a(t)·e^{iφ} + noise
+
+<b>Superposition</b> (evoked + independent alpha)
+EEG = Y·e^{i(ωt+δ)} + a(t)·e^{iφα} + noise
+dφα/dt = ω₀ + √(2D)·ξ(t)
+Y = g · L / √(1 + (Δf / w)²)
+
+<b>Both</b>
+Δphase = arg(EEG) − ωt
+ρ = (ln 80 − S) / ln 80</pre>
+    </article>
+    <article class="panel">
+      <h2>What this leaves out</h2>
+      <p>The models are simplified on purpose. They use the analytic signal directly instead of the paper's FIR filter and Hilbert transform. Coupling is sinusoidal rather than the per-flash phase response of real light pulses. There is one oscillator and one channel.</p>
+      <p>Parameters are chosen to make the behaviour visible, not fitted to the paper's data. Plateaus are detected as |slope| &lt; 0.3 cycles/s over 0.5 s, lasting at least 0.5 s. Like the paper's threshold, that cut-off is arbitrary.</p>
+      <p>ρ has a small positive floor from finite samples, so a value near 0.01 means no locking.</p>
+    </article>
+  </section>
+</div>
+
+<script>
+(() => {
+"use strict";
+const TAU = Math.PI * 2, DT = 0.004, FS = 250, N = 7500, TRIM = 500, F0 = 10, BINS = 80;
+const ANALYSED = (N - 2 * TRIM) * DT;
+const root = document.documentElement;
+const $ = id => document.getElementById(id);
+
+const state = { model: "ent", level: 4, df: 2, kappa: 0.5, gain: 0.28, resW: 1.5, D: 3, sigA: 0.5, sens: 0.15, seed: 20160203, grid: "coarse" };
+const MAP_KEYS = new Set(["model", "kappa", "gain", "resW", "D", "sigA", "sens", "seed", "grid"]);
+const minus = v => (v < 0 ? "−" : "") + Math.abs(v);
+const FMT = {
+  level: v => v.toFixed(2),
+  df: v => (v < 0 ? "−" : "+") + Math.abs(v).toFixed(1) + " Hz · " + (F0 + v).toFixed(1) + " Hz",
+  kappa: v => v.toFixed(2) + " Hz",
+  gain: v => v.toFixed(2),
+  resW: v => v.toFixed(1) + " Hz",
+  D: v => v.toFixed(1) + " rad²/s",
+  sigA: v => v.toFixed(2),
+  sens: v => v.toFixed(2),
+};
+
+/* ---------- random numbers ---------- */
+function mulberry32(a) {
+  return function () {
+    a |= 0; a = a + 0x6D2B79F5 | 0;
+    let t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+function makeRandn(rng) {
+  let spare = null;
+  return () => {
+    if (spare !== null) { const s = spare; spare = null; return s; }
+    let u = 0; while (u === 0) u = rng();
+    const v = rng(), m = Math.sqrt(-2 * Math.log(u));
+    spare = m * Math.sin(TAU * v);
+    return m * Math.cos(TAU * v);
+  };
+}
+
+/* ---------- simulation core ---------- */
+function simulate(p, seed, th, sig) {
+  const rng = mulberry32(seed), randn = makeRandn(rng);
+  const w = TAU * (F0 + p.df), w0 = TAU * F0;
+  const K = TAU * p.kappa * p.level;
+  const Y = p.gain * p.level / Math.sqrt(1 + (p.df / p.resW) ** 2);
+  const lat = -0.6;
+  const sqD = Math.sqrt(2 * p.D * DT);
+  const aA = DT / 0.5, sA = p.sigA * Math.sqrt(2 * DT / 0.5), ampBias = p.sigA * p.sigA / 2;
+  const aN = DT / 0.15, sN = p.sens * Math.sqrt(DT / 0.15);
+  let phi = rng() * TAU, x = p.sigA * randn();
+  let nR = p.sens * Math.SQRT1_2 * randn(), nI = p.sens * Math.SQRT1_2 * randn();
+  let prevAng = 0, uPhase = 0;
+  const ent = p.model === "ent";
+  for (let k = 0; k < N; k++) {
+    const t = k * DT, psi = w * t;
+    x += -x * aA + sA * randn();
+    const r = Math.exp(x - ampBias);
+    let zr, zi;
+    if (ent) {
+      phi += (w0 + K * Math.sin(psi - phi)) * DT + sqD * randn();
+      zr = r * Math.cos(phi); zi = r * Math.sin(phi);
+    } else {
+      phi += w0 * DT + sqD * randn();
+      zr = r * Math.cos(phi) + Y * Math.cos(psi + lat);
+      zi = r * Math.sin(phi) + Y * Math.sin(psi + lat);
+    }
+    nR += -nR * aN + sN * randn(); nI += -nI * aN + sN * randn();
+    const c = Math.cos(w0 * t), s = Math.sin(w0 * t);
+    zr += nR * c - nI * s; zi += nR * s + nI * c;
+    const ang = Math.atan2(zi, zr);
+    if (k === 0) uPhase = ang;
+    else {
+      let d = ang - prevAng;
+      if (d > Math.PI) d -= TAU; else if (d < -Math.PI) d += TAU;
+      uPhase += d;
+    }
+    prevAng = ang;
+    th[k] = uPhase - psi;
+    if (sig) sig[k] = zr;
+  }
+}
+
+function phaseStats(th) {
+  const hist = new Float64Array(BINS);
+  let cs = 0, sn = 0, n = 0;
+  for (let k = TRIM; k < N - TRIM; k++) {
+    const a = th[k];
+    const wr = ((a + Math.PI) % TAU + TAU) % TAU;
+    hist[Math.min(BINS - 1, Math.floor(wr / TAU * BINS))]++;
+    cs += Math.cos(a); sn += Math.sin(a); n++;
+  }
+  let S = 0;
+  for (let b = 0; b < BINS; b++) { const q = hist[b] / n; if (q > 0) S -= q * Math.log(q); }
+  const Smax = Math.log(BINS);
+  return { rho: (Smax - S) / Smax, R: Math.hypot(cs, sn) / n, mean: Math.atan2(sn, cs), hist };
+}
+
+function findPlateaus(th) {
+  const W = 62, thr = 0.3 * TAU, minLen = 125, runs = [];
+  let start = -1, locked = 0, longest = 0;
+  for (let k = TRIM; k < N - TRIM; k++) {
+    const ok = Math.abs((th[k + W] - th[k - W]) / (2 * W * DT)) < thr;
+    if (ok && start < 0) start = k;
+    const last = k === N - TRIM - 1;
+    if (start >= 0 && (!ok || last)) {
+      const end = ok ? k + 1 : k;
+      if (end - start >= minLen) { runs.push([start, end]); locked += end - start; longest = Math.max(longest, end - start); }
+      start = -1;
+    }
+  }
+  return { runs, frac: locked / (N - 2 * TRIM), longest: longest * DT };
+}
+
+function countSlips(th) {
+  let ref = th[TRIM], n = 0;
+  for (let k = TRIM; k < N - TRIM; k++) {
+    const d = th[k] - ref;
+    if (d >= TAU) { n++; ref += TAU; } else if (d <= -TAU) { n++; ref -= TAU; }
+  }
+  return n;
+}
+
+function fft(re, im) {
+  const n = re.length;
+  for (let i = 1, j = 0; i < n; i++) {
+    let bit = n >> 1;
+    for (; j & bit; bit >>= 1) j ^= bit;
+    j ^= bit;
+    if (i < j) { let t = re[i]; re[i] = re[j]; re[j] = t; t = im[i]; im[i] = im[j]; im[j] = t; }
+  }
+  for (let len = 2; len <= n; len <<= 1) {
+    const ang = -TAU / len, wr = Math.cos(ang), wi = Math.sin(ang), half = len >> 1;
+    for (let i = 0; i < n; i += len) {
+      let cr = 1, ci = 0;
+      for (let j = 0; j < half; j++) {
+        const a = i + j, b = a + half;
+        const tr = re[b] * cr - im[b] * ci, ti = re[b] * ci + im[b] * cr;
+        re[b] = re[a] - tr; im[b] = im[a] - ti; re[a] += tr; im[a] += ti;
+        const ncr = cr * wr - ci * wi; ci = cr * wi + ci * wr; cr = ncr;
+      }
+    }
+  }
+}
+
+function welch(sig) {
+  const SEG = 1000, NFFT = 1024, HOP = 500;
+  const psd = new Float64Array(NFFT / 2 + 1), re = new Float64Array(NFFT), im = new Float64Array(NFFT);
+  const win = new Float64Array(SEG);
+  for (let i = 0; i < SEG; i++) win[i] = 0.5 - 0.5 * Math.cos(TAU * i / (SEG - 1));
+  for (let s = TRIM; s + SEG <= N - TRIM; s += HOP) {
+    let mean = 0;
+    for (let i = 0; i < SEG; i++) mean += sig[s + i];
+    mean /= SEG;
+    re.fill(0); im.fill(0);
+    for (let i = 0; i < SEG; i++) re[i] = (sig[s + i] - mean) * win[i];
+    fft(re, im);
+    for (let f = 0; f <= NFFT / 2; f++) psd[f] += re[f] * re[f] + im[f] * im[f];
+  }
+  return { psd, df: FS / NFFT };
+}
+
+/* ---------- drawing helpers ---------- */
+function colors() {
+  const cs = getComputedStyle(root), g = n => cs.getPropertyValue(n).trim();
+  return { panel: g("--panel"), ink: g("--ink"), muted: g("--muted"), rule: g("--rule"), grid: g("--grid"), accent: g("--accent") };
+}
+function rgb(hex) {
+  const h = hex.replace("#", "");
+  const f = h.length === 3 ? h.split("").map(c => c + c).join("") : h;
+  return [0, 2, 4].map(i => parseInt(f.slice(i, i + 2), 16));
+}
+function rgba(hex, a) { const [r, g, b] = rgb(hex); return `rgba(${r},${g},${b},${a})`; }
+function mix(h1, h2, t) {
+  const a = rgb(h1), b = rgb(h2);
+  return `rgb(${a.map((v, i) => Math.round(v + (b[i] - v) * t)).join(",")})`;
+}
+function prep(cv) {
+  const dpr = window.devicePixelRatio || 1, w = cv.clientWidth, h = cv.clientHeight;
+  if (!w || !h) return null;
+  const W = Math.round(w * dpr), H = Math.round(h * dpr);
+  if (cv.width !== W || cv.height !== H) { cv.width = W; cv.height = H; }
+  const ctx = cv.getContext("2d");
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, w, h);
+  return { ctx, w, h };
+}
+function niceStep(range, target) {
+  const raw = range / target, mag = Math.pow(10, Math.floor(Math.log10(raw))), f = raw / mag;
+  return (f < 1.5 ? 1 : f < 3 ? 2 : f < 7 ? 5 : 10) * mag;
+}
+const MONO = '"JetBrains Mono", ui-monospace, monospace';
+
+const cvPhase = $("cv-phase"), cvPolar = $("cv-polar"), cvSpec = $("cv-spec"), cvMap = $("cv-map");
+const mainTh = new Float64Array(N), mainSig = new Float64Array(N), mapTh = new Float64Array(N);
+let res = null;
+
+function drawPhase() {
+  const P = prep(cvPhase); if (!P || !res) return;
+  const { ctx, w, h } = P, C = colors();
+  const m = { l: 46, r: 12, t: 10, b: 30 }, pw = w - m.l - m.r, ph = h - m.t - m.b;
+  const base = mainTh[TRIM];
+  let lo = Infinity, hi = -Infinity;
+  for (let k = 0; k < N; k++) { const v = (mainTh[k] - base) / TAU; if (v < lo) lo = v; if (v > hi) hi = v; }
+  const mid = (lo + hi) / 2, half = Math.max(1, (hi - lo) / 2) * 1.08;
+  lo = mid - half; hi = mid + half;
+  const X = t => m.l + t / 30 * pw, Y = v => m.t + (hi - v) / (hi - lo) * ph;
+
+  ctx.fillStyle = rgba(C.muted, 0.12);
+  ctx.fillRect(X(0), m.t, X(2) - X(0), ph);
+  ctx.fillRect(X(28), m.t, X(30) - X(28), ph);
+  ctx.fillStyle = rgba(C.accent, 0.16);
+  for (const [a, b] of res.pl.runs) ctx.fillRect(X(a * DT), m.t, X(b * DT) - X(a * DT), ph);
+
+  ctx.font = `11px ${MONO}`; ctx.fillStyle = C.muted; ctx.strokeStyle = C.grid; ctx.lineWidth = 1;
+  const ys = niceStep(hi - lo, 5);
+  ctx.textAlign = "right"; ctx.textBaseline = "middle";
+  for (let v = Math.ceil(lo / ys) * ys; v <= hi; v += ys) {
+    const y = Math.round(Y(v)) + 0.5;
+    ctx.beginPath(); ctx.moveTo(m.l, y); ctx.lineTo(m.l + pw, y); ctx.stroke();
+    ctx.fillText(minus(+v.toFixed(2)), m.l - 6, y);
+  }
+  ctx.textAlign = "center"; ctx.textBaseline = "top";
+  for (let t = 0; t <= 30; t += 5) ctx.fillText(t, X(t), m.t + ph + 6);
+  ctx.textAlign = "right"; ctx.fillText("time (s)", m.l + pw, m.t + ph + 18 > h - 12 ? h - 12 : m.t + ph + 18);
+  ctx.save(); ctx.translate(11, m.t + ph / 2); ctx.rotate(-Math.PI / 2); ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  ctx.fillText("Δ phase (cycles)", 0, 0); ctx.restore();
+
+  ctx.strokeStyle = C.accent; ctx.lineWidth = 1.5; ctx.lineJoin = "round"; ctx.beginPath();
+  for (let k = 0; k < N; k++) {
+    const x = X(k * DT), y = Y((mainTh[k] - base) / TAU);
+    k ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+  }
+  ctx.stroke();
+  ctx.strokeStyle = C.rule; ctx.strokeRect(m.l + 0.5, m.t + 0.5, pw - 1, ph - 1);
+}
+
+function drawPolar() {
+  const P = prep(cvPolar); if (!P || !res) return;
+  const { ctx, w, h } = P, C = colors();
+  const cx = w / 2, cy = h / 2, R = Math.min(w, h) / 2 - 24;
+  const hist = res.ps.hist; let hmax = 0;
+  for (const v of hist) hmax = Math.max(hmax, v);
+  ctx.strokeStyle = C.grid; ctx.lineWidth = 1;
+  for (const f of [0.25, 0.5, 0.75, 1]) { ctx.beginPath(); ctx.arc(cx, cy, R * f, 0, TAU); ctx.stroke(); }
+  for (let i = 0; i < 8; i++) {
+    const a = i * Math.PI / 4;
+    ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + R * Math.cos(a), cy - R * Math.sin(a)); ctx.stroke();
+  }
+  ctx.fillStyle = rgba(C.accent, 0.8);
+  for (let b = 0; b < BINS; b++) {
+    if (!hist[b]) continue;
+    const a0 = -Math.PI + b * TAU / BINS, a1 = a0 + TAU / BINS, r = R * hist[b] / hmax;
+    ctx.beginPath(); ctx.moveTo(cx, cy); ctx.arc(cx, cy, r, -a0, -a1, true); ctx.closePath(); ctx.fill();
+  }
+  const mr = R * res.ps.R;
+  ctx.strokeStyle = C.ink; ctx.lineWidth = 2; ctx.lineCap = "round";
+  ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + mr * Math.cos(res.ps.mean), cy - mr * Math.sin(res.ps.mean)); ctx.stroke();
+  ctx.fillStyle = C.ink; ctx.beginPath(); ctx.arc(cx, cy, 2.5, 0, TAU); ctx.fill();
+  ctx.font = `11px ${MONO}`; ctx.fillStyle = C.muted; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  ctx.fillText("0", cx + R + 12, cy);
+  ctx.fillText("π", cx - R - 12, cy);
+  ctx.fillText("π/2", cx, cy - R - 12);
+  ctx.fillText("−π/2", cx, cy + R + 12);
+}
+
+function drawSpec() {
+  const P = prep(cvSpec); if (!P || !res) return;
+  const { ctx, w, h } = P, C = colors();
+  const m = { l: 14, r: 12, t: 34, b: 30 }, pw = w - m.l - m.r, ph = h - m.t - m.b;
+  const { psd, df } = res.psd, f0 = 4, f1 = 16;
+  const i0 = Math.floor(f0 / df), i1 = Math.ceil(f1 / df);
+  let mx = 0; for (let i = i0; i <= i1; i++) mx = Math.max(mx, psd[i]);
+  const X = f => m.l + (f - f0) / (f1 - f0) * pw, Y = v => m.t + ph - v / mx * ph;
+  ctx.strokeStyle = C.grid; ctx.lineWidth = 1;
+  ctx.font = `11px ${MONO}`; ctx.fillStyle = C.muted; ctx.textAlign = "center"; ctx.textBaseline = "top";
+  for (let f = 4; f <= 16; f += 2) {
+    const x = Math.round(X(f)) + 0.5;
+    ctx.beginPath(); ctx.moveTo(x, m.t); ctx.lineTo(x, m.t + ph); ctx.stroke();
+    ctx.fillText(f, x, m.t + ph + 6);
+  }
+  ctx.textAlign = "right"; ctx.fillText("Hz", m.l + pw, m.t + ph + 18);
+  ctx.beginPath(); ctx.moveTo(X(i0 * df), Y(0));
+  for (let i = i0; i <= i1; i++) ctx.lineTo(X(i * df), Y(psd[i]));
+  ctx.lineTo(X(i1 * df), Y(0)); ctx.closePath();
+  ctx.save(); ctx.beginPath(); ctx.rect(m.l, m.t - 2, pw, ph + 2); ctx.clip();
+  ctx.beginPath(); ctx.moveTo(X(i0 * df), Y(0));
+  for (let i = i0; i <= i1; i++) ctx.lineTo(X(i * df), Y(psd[i]));
+  ctx.lineTo(X(i1 * df), Y(0)); ctx.closePath();
+  ctx.fillStyle = rgba(C.accent, 0.18); ctx.fill();
+  ctx.beginPath();
+  for (let i = i0; i <= i1; i++) { const x = X(i * df), y = Y(psd[i]); i === i0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y); }
+  ctx.strokeStyle = C.accent; ctx.lineWidth = 1.6; ctx.stroke();
+  ctx.restore();
+  const fd = F0 + state.df;
+  ctx.setLineDash([4, 4]); ctx.strokeStyle = C.muted; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(X(F0), m.t - 8); ctx.lineTo(X(F0), m.t + ph); ctx.stroke();
+  ctx.setLineDash([]); ctx.strokeStyle = C.ink;
+  ctx.beginPath(); ctx.moveTo(X(fd), m.t - 22); ctx.lineTo(X(fd), m.t + ph); ctx.stroke();
+  ctx.textBaseline = "middle"; ctx.textAlign = "left";
+  const lab = (txt, x, y, col) => {
+    const tw = ctx.measureText(txt).width, right = x + 5 + tw > m.l + pw;
+    ctx.textAlign = right ? "right" : "left"; ctx.fillStyle = col;
+    ctx.fillText(txt, right ? x - 5 : x + 5, y);
+  };
+  lab("IAF 10 Hz", X(F0), m.t - 4, C.muted);
+  lab("flicker " + fd.toFixed(1) + " Hz", X(fd), m.t - 18, C.ink);
+}
+
+/* ---------- tongue map ---------- */
+const mapState = { levels: [], dfs: [], rho: null, total: 0, done: 0, job: 0, vmax: 0.05, sl: 1, sd: 1, subj: 4 };
+let mapGeom = null, mapTimer = null;
+const range = (a, b, s) => { const out = []; for (let v = a; v <= b + 1e-9; v += s) out.push(Math.round(v * 1000) / 1000); return out; };
+
+function scheduleMap() { clearTimeout(mapTimer); mapTimer = setTimeout(startMap, 180); }
+function startMap() {
+  const job = ++mapState.job, fine = state.grid === "fine";
+  const levels = fine ? range(1, 5, 0.25) : range(1, 5, 1);
+  const dfs = fine ? range(-3, 3, 0.25) : range(-3, 3, 1);
+  const subj = fine ? 2 : 4;
+  Object.assign(mapState, { levels, dfs, subj, sl: fine ? 0.25 : 1, sd: fine ? 0.25 : 1, total: levels.length * dfs.length, done: 0, vmax: 0.05,
+    rho: new Float64Array(levels.length * dfs.length).fill(NaN) });
+  const p = { ...state };
+  let i = 0;
+  const tick = () => {
+    if (job !== mapState.job) return;
+    const t0 = performance.now();
+    while (i < mapState.total && performance.now() - t0 < 14) {
+      const li = Math.floor(i / dfs.length), di = i % dfs.length, q = { ...p, level: levels[li], df: dfs[di] };
+      let s = 0;
+      for (let k = 0; k < subj; k++) { simulate(q, p.seed + 1 + k * 7919, mapTh, null); s += phaseStats(mapTh).rho; }
+      const v = s / subj;
+      mapState.rho[i] = v;
+      if (v > mapState.vmax) mapState.vmax = v;
+      i++;
+    }
+    mapState.done = i;
+    drawMap(); updateMapStatus();
+    if (i < mapState.total) setTimeout(tick, 0);
+  };
+  updateMapCaption();
+  tick();
+}
+function updateMapStatus() {
+  $("map-status").textContent = mapState.done < mapState.total
+    ? `Computing ${Math.round(mapState.done / mapState.total * 100)}%`
+    : `${mapState.total} cells × ${mapState.subj} subjects × 30 s`;
+  $("legend-max").textContent = mapState.vmax.toFixed(2);
+}
+function updateMapCaption() {
+  const subj = state.grid === "fine" ? 2 : 4;
+  const line = state.model === "ent"
+    ? "Dashed line: the Adler tongue edge, |Δf| = κ · L."
+    : "Dashed line: where the evoked response equals the mean alpha amplitude.";
+  $("map-cap").textContent = `Mean ρ across ${subj} simulated subjects per cell. ${line} Click a cell to load it.`;
+}
+
+function drawMap() {
+  const P = prep(cvMap); if (!P || !mapState.rho) return;
+  const { ctx, w, h } = P, C = colors();
+  const m = { l: 40, r: 10, t: 10, b: 36 }, pw = w - m.l - m.r, ph = h - m.t - m.b;
+  const { levels, dfs, rho, sd, sl, vmax } = mapState;
+  const xmin = dfs[0] - sd / 2, xmax = dfs[dfs.length - 1] + sd / 2, ymin = levels[0] - sl / 2, ymax = levels[levels.length - 1] + sl / 2;
+  mapGeom = { m, pw, ph, xmin, xmax, ymin, ymax };
+  const X = v => m.l + (v - xmin) / (xmax - xmin) * pw, Y = v => m.t + (ymax - v) / (ymax - ymin) * ph;
+  const cw = pw / dfs.length, ch = ph / levels.length, coarse = state.grid === "coarse";
+  ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.font = `${Math.max(9, Math.min(12, cw / 4.2))}px ${MONO}`;
+  for (let li = 0; li < levels.length; li++) for (let di = 0; di < dfs.length; di++) {
+    const v = rho[li * dfs.length + di], x = X(dfs[di] - sd / 2), y = Y(levels[li] + sl / 2);
+    if (Number.isNaN(v)) { ctx.fillStyle = C.grid; ctx.fillRect(x, y, cw + 0.5, ch + 0.5); continue; }
+    const t = Math.pow(Math.min(1, v / vmax), 0.8);
+    ctx.fillStyle = mix(C.panel, C.accent, t); ctx.fillRect(x, y, cw + 0.5, ch + 0.5);
+    if (coarse && cw > 34) { ctx.fillStyle = t > 0.55 ? C.panel : C.ink; ctx.fillText(v.toFixed(2), x + cw / 2, y + ch / 2); }
+  }
+  ctx.save(); ctx.beginPath(); ctx.rect(m.l, m.t, pw, ph); ctx.clip();
+  ctx.setLineDash([6, 4]); ctx.strokeStyle = C.ink; ctx.lineWidth = 1.4; ctx.beginPath();
+  if (state.model === "ent") {
+    for (const s of [-1, 1]) { ctx.moveTo(X(0), Y(0)); ctx.lineTo(X(s * state.kappa * 8), Y(8)); }
+  } else {
+    const pts = [];
+    for (let L = ymax + 0.5; L >= 0; L -= 0.01) { const gl = state.gain * L; if (gl <= 1) break; pts.push([state.resW * Math.sqrt(gl * gl - 1), L]); }
+    if (pts.length) {
+      pts.forEach(([d, L], i) => i ? ctx.lineTo(X(-d), Y(L)) : ctx.moveTo(X(-d), Y(L)));
+      for (let i = pts.length - 1; i >= 0; i--) ctx.lineTo(X(pts[i][0]), Y(pts[i][1]));
+    }
+  }
+  ctx.stroke(); ctx.setLineDash([]);
+  const mx = X(state.df), my = Y(state.level);
+  ctx.lineWidth = 4; ctx.strokeStyle = C.panel; ctx.beginPath(); ctx.arc(mx, my, 7, 0, TAU); ctx.stroke();
+  ctx.lineWidth = 1.8; ctx.strokeStyle = C.ink; ctx.beginPath(); ctx.arc(mx, my, 7, 0, TAU); ctx.stroke();
+  ctx.restore();
+  ctx.strokeStyle = C.rule; ctx.lineWidth = 1; ctx.strokeRect(m.l + 0.5, m.t + 0.5, pw - 1, ph - 1);
+  ctx.font = `11px ${MONO}`; ctx.fillStyle = C.muted; ctx.textAlign = "center"; ctx.textBaseline = "top";
+  for (let d = -3; d <= 3; d++) ctx.fillText(d > 0 ? "+" + d : minus(d), X(d), m.t + ph + 5);
+  ctx.fillText("flicker − IAF (Hz)", m.l + pw / 2, m.t + ph + 20);
+  ctx.textAlign = "right"; ctx.textBaseline = "middle";
+  for (let L = 1; L <= 5; L++) ctx.fillText(L, m.l - 6, Y(L));
+  ctx.save(); ctx.translate(11, m.t + ph / 2); ctx.rotate(-Math.PI / 2); ctx.textAlign = "center";
+  ctx.fillText("intensity", 0, 0); ctx.restore();
+}
+
+/* ---------- main run + readouts ---------- */
+function runMain() {
+  simulate(state, state.seed, mainTh, mainSig);
+  const ps = phaseStats(mainTh), pl = findPlateaus(mainTh), sl = countSlips(mainTh);
+  const drift = Math.abs(mainTh[N - TRIM - 1] - mainTh[TRIM]) / TAU / ANALYSED;
+  res = { ps, pl, sl, drift, psd: welch(mainSig) };
+  $("ro-rho").textContent = ps.rho.toFixed(3);
+  $("ro-R").textContent = ps.R.toFixed(2);
+  $("ro-lock").textContent = Math.round(pl.frac * 100) + "%";
+  $("ro-long").textContent = pl.longest.toFixed(1) + " s";
+  $("ro-slip").textContent = (sl / ANALYSED * 60).toFixed(1);
+  $("ro-drift").textContent = drift.toFixed(2) + " Hz";
+  if (state.model === "ent") {
+    const kh = state.kappa * state.level, a = Math.abs(state.df);
+    $("ro-theory").textContent = "Adler, no noise: " + (a <= kh ? 0 : Math.sqrt(a * a - kh * kh)).toFixed(2) + " Hz";
+  } else {
+    const Y = state.gain * state.level / Math.sqrt(1 + (state.df / state.resW) ** 2);
+    $("ro-theory").textContent = "evoked ÷ alpha: " + Y.toFixed(2);
+  }
+  drawPhase(); drawPolar(); drawSpec(); drawMap();
+}
+let pending = false;
+function requestMain() {
+  if (pending) return;
+  pending = true;
+  requestAnimationFrame(() => { pending = false; runMain(); });
+}
+function redrawAll() { drawPhase(); drawPolar(); drawSpec(); drawMap(); }
+
+/* ---------- controls ---------- */
+function setOut(key) { const o = $("o-" + key); if (o) o.textContent = FMT[key](state[key]); }
+function setParam(key, val) { state[key] = val; const el = $(key); if (el) el.value = val; setOut(key); }
+
+for (const key of Object.keys(FMT)) {
+  const el = $(key);
+  const v = parseFloat(el.value);
+  if (!Number.isNaN(v)) state[key] = v;
+  setOut(key);
+  el.addEventListener("input", () => {
+    state[key] = parseFloat(el.value); setOut(key);
+    if (MAP_KEYS.has(key)) scheduleMap();
+    requestMain();
+  });
+}
+
+function setModel(mod) {
+  state.model = mod;
+  root.dataset.model = mod;
+  document.querySelectorAll("[data-m]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.m === mod)));
+  $("grp-ent").hidden = mod !== "ent";
+  $("grp-sup").hidden = mod !== "sup";
+  $("model-hint").textContent = mod === "ent"
+    ? "Noisy Adler phase oscillator, pulled by the flicker."
+    : "Fixed evoked response added to alpha that runs on its own.";
+}
+document.querySelectorAll("[data-m]").forEach(b => b.addEventListener("click", () => {
+  if (state.model === b.dataset.m) return;
+  setModel(b.dataset.m); startMap(); requestMain();
+}));
+document.querySelectorAll("[data-grid]").forEach(b => b.addEventListener("click", () => {
+  state.grid = b.dataset.grid;
+  document.querySelectorAll("[data-grid]").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+  startMap();
+}));
+
+const PRESETS = {
+  inside: { model: "ent", level: 5, df: 0 },
+  border: { model: "ent", level: 4, df: 2 },
+  outside: { model: "ent", level: 1, df: 3 },
+  mimic: { model: "sup", level: 3.5, df: 1, sigA: 0.6 },
+};
+document.querySelectorAll("[data-preset]").forEach(b => b.addEventListener("click", () => {
+  const p = PRESETS[b.dataset.preset];
+  const remap = p.model !== state.model || (p.sigA !== undefined && p.sigA !== state.sigA);
+  setModel(p.model);
+  for (const [k, v] of Object.entries(p)) if (k !== "model") setParam(k, v);
+  if (remap) startMap();
+  requestMain();
+}));
+$("reseed").addEventListener("click", () => {
+  state.seed = (Math.random() * 1e9) | 0;
+  startMap(); requestMain();
+});
+
+cvMap.addEventListener("click", e => {
+  if (!mapGeom) return;
+  const r = cvMap.getBoundingClientRect(), { m, pw, ph, xmin, xmax, ymin, ymax } = mapGeom;
+  const x = e.clientX - r.left, y = e.clientY - r.top;
+  if (x < m.l || x > m.l + pw || y < m.t || y > m.t + ph) return;
+  const d = xmin + (x - m.l) / pw * (xmax - xmin), L = ymax - (y - m.t) / ph * (ymax - ymin);
+  const near = (arr, v) => arr.reduce((a, b) => Math.abs(b - v) < Math.abs(a - v) ? b : a);
+  setParam("df", near(mapState.dfs, d));
+  setParam("level", near(mapState.levels, L));
+  requestMain();
+});
+
+/* ---------- theme + resize ---------- */
+let redrawPending = false;
+const requestRedraw = () => {
+  if (redrawPending) return;
+  redrawPending = true;
+  requestAnimationFrame(() => { redrawPending = false; redrawAll(); });
+};
+new ResizeObserver(requestRedraw).observe(document.querySelector(".scopes"));
+window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", requestRedraw);
+new MutationObserver(requestRedraw).observe(root, { attributes: true, attributeFilter: ["data-theme"] });
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(requestRedraw);
+
+setModel(state.model);
+runMain();
+startMap();
+})();
+</script>
+</body>
+</html>
